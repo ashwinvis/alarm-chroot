@@ -1,0 +1,71 @@
+#!/bin/bash
+
+set -e
+SETUP=false
+
+if [ -z $SUDO_USER ]; then
+  echo "Please run as sudo... exiting"
+  exit 1;
+fi
+
+if [[ $SETUP = true ]]; then
+  echo "
+  # Creating an image file is simple, just create an empty file large enough to
+  # store everything we want to install. A simple way to do this is with fallocate
+  # to create a 2 gigibyte file run the following.
+  "
+  fallocate -l 2G "custom-pi.img"
+fi
+
+echo "
+# Now setup the image as a loopback device so we can format and mount it as any
+# physical disk. Note the device that this command returns, we will need it later
+# - in the example below its /dev/loop0.
+"
+losetup --find --show "custom-pi.img"
+
+if [[ $SETUP = true ]]; then
+  echo "
+  # Here we create the partitions the first one, 100M in size, for the boot
+  # files and the second one for the rest of the system.
+  "
+  parted --script /dev/loop0 mklabel msdos
+  parted --script /dev/loop0 mkpart primary fat32 0% 100M
+  parted --script /dev/loop0 mkpart primary ext4 100M 100%
+
+  echo "
+  # This will create two new devices /dev/loop0p1 and /dev/loop0p2 which you
+  # can see by running ls /dev/loop0?*. We can now format these partitions with
+  # vfat (required for the boot partition) and ext4 respectively.
+  "
+  mkfs.vfat -F32 /dev/loop0p1
+  mkfs.ext4 -F /dev/loop0p2
+fi
+
+echo "
+# Before we can install archlinuxarm we must mount the partition.
+"
+mount /dev/loop0p2 /mnt
+mount /dev/loop0p1 /mnt/boot
+
+if [[ $SETUP = true ]]; then
+  echo "
+  # Now download the archlinuxarm tar for your pi. For the raspberry pi 2/3
+  "
+  if [ ! -f "./ArchLinuxARM-rpi-2-latest.tar.gz" ]; then
+    wget http://archlinuxarm.org/os/ArchLinuxARM-rpi-2-latest.tar.gz
+  fi
+  tar -xpf "ArchLinuxARM-rpi-2-latest.tar.gz" -C /mnt
+fi
+
+echo "
+# And now for the bit that allows us to execute arm executables on a x86 or
+# x86_64 system.
+"
+cp /usr/bin/qemu-arm-static /mnt/usr/bin/
+
+echo "
+# We should now be able to chroot into our raspberry pi image.
+"
+arch-chroot /mnt /usr/bin/bash
+./deactivate

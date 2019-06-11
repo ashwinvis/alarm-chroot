@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+if [ -z $SUDO_USER ]; then
+  echo "Please run as sudo... exiting"
+  exit 1;
+fi
+
+echo "
+# Now we can unmount the partitions and detach the loopback device.
+"
+umount /mnt/boot
+umount /mnt
+losetup --detach "/dev/loop0"
