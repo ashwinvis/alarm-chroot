@@ -1,0 +1,5 @@
+#!/bin/bash
+# It is highly recommended to get the latest version of btrfs-tools and recover
+# important data with the steps listed above (mount -o recovery,ro and btrfs
+# restore) before trying btrfs check --repair 
+btrfs check --repair /dev/mmcblk0p2

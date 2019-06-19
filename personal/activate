@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -e
+if [ -z $SUDO_USER ]; then
+  echo "Please run as sudo... exiting"
+  exit 1;
+fi
+
+
+echo "
+# Let's mount the existing installation
+"
+mount -t btrfs -o rw,subvol=/root /dev/mmcblk0p2 /mnt
+mount -t btrfs -o rw,subvol=/home /dev/mmcblk0p2 /mnt/home
+mount -o rw /dev/mmcblk0p1 /mnt/boot
